@@ -1,0 +1,68 @@
+.btn-casa {
+    min-width: 3.5vh;
+    min-height: 3.5vh;
+    max-width: 3.5vh;
+    max-height: 3.5vh;
+    width: 3.5vh;
+    height: 3.5vh;
+}
+
+#barco_01, .barco_01 {
+    min-width: 3.4vh;
+    min-height: 3.4vh;
+    max-width: 3.4vh;
+    max-height: 3.4vh;
+    width: 3.4vh;
+    height: 3.4vh;
+}
+
+#barco_02, .barco_02  {
+    min-width: 6.8vh;
+    min-height: 3.4vh;
+    max-width: 6.8vh;
+    max-height: 3.4vh;
+    width: 6.8vh;
+    height: 3.4vh;
+}
+
+#barco_03, .barco_03 {
+    min-width: 10.2vh;
+    min-height: 3.4vh;
+    max-width: 10.2vh;
+    max-height: 3.4vh;
+    width: 10.2vh;
+    height: 3.4vh;
+}
+
+#barco_04, .barco_04 {
+    min-width: 13.6vh;
+    min-height: 3.4vh;
+    max-width: 13.6vh;
+    max-height: 3.4vh;
+    width: 13.6vh;
+    height: 3.4vh;
+}
+
+#barco_05, .barco_05 {
+    min-width: 17vh;
+    min-height: 3.4vh;
+    max-width: 17.4vh;
+    max-height: 3.4vh;
+    width: 17vh;
+    height: 3.4vh;
+}
+
+#tabuleiroPlayer, #tabuleiroOponente{
+    line-height: 0;
+    border-style: solid;
+    width: fit-content;
+    height: fit-content;
+}
+
+
+#tabuleiroPlayer .btn-check:focus+.btn-secondary, .btn-secondary:focus, #tabuleiroOponente .btn-check:focus+.btn-secondary, .btn-secondary:focus {
+    background-color: #6c757d;  
+    /*border-color: #6c757d;*/
+    box-shadow: none;
+    outline:none;
+}

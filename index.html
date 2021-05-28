@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* body {
+            width: 100vh;
+            height: 100vh;
+        } */
+
+        img {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container-fluid vh-100">
+        <div class="row text-center pt-5 pb-5">
+            <div class="col-2">
+                <h3>Posicione Seus Barcos</h3>
+            </div>
+            <div class="col-5">
+                <h2>Seu Tabuleiro</h2>
+            </div>
+            <div class="col-5">
+                <h2>Tabuleiro do Adversário</h2>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-2 d-flex justify-content-center align-items-center">
+                <div>
+                    <div class="pb-3">
+                        <img id="barco_01" src="./src/imgs/barcos/01.png" onclick="changeBarco(this)">
+                    </div>
+                    <div class="pb-3">
+                        <img id="barco_02" src="./src/imgs/barcos/02.png" onclick="changeBarco(this)">
+                    </div>
+                    <div class="pb-3">
+                        <img id="barco_03" src="./src/imgs/barcos/03.png" onclick="changeBarco(this)">
+                    </div>
+                    <div class="pb-3">
+                        <img id="barco_04" src="./src/imgs/barcos/04.png" onclick="changeBarco(this)">
+                    </div>
+                    <div class="pb-3">
+                        <img id="barco_05" src="./src/imgs/barcos/05.png" onclick="changeBarco(this)">
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-5 d-flex justify-content-center align-items-center v-100">
+                <div id="tabuleiroPlayer">
+
+                </div>
+            </div>
+            <div class="col-5 border-start d-flex justify-content-center align-items-center v-100">
+                <div id="tabuleiroOponente">
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4"
+        crossorigin="anonymous"></script>
+
+    <script>
+
+        let barcoNoMouse = "";
+        let img = undefined;
+        let posicao = "h"; // h - horizontal    v - vertical
+        let mouse;
+        var selecionado = false;
+
+        function changeBarco(e) {
+            dropBarco();
+            img = document.getElementById(e.id)
+            barcoNoMouse = e.id;
+            console.log("Peguei barco" + img);
+            img.style.position = "absolute";
+            selecionado = true;
+        }
+
+        function dropBarco() {
+            if (selecionado) {
+                limpaHover();
+                console.log("Deixando barco");
+                img.style.position = "relative"
+                img.style.top = "0px";
+                img.style.left = "0px";
+                img.style.transform = "rotate(0deg)";
+                posicao = "h";
+                img = undefined;
+                barcoNoMouse = "";
+            }
+            selecionado = false
+        }
+
+        window.addEventListener('mousemove', async (e) => {
+            mouse = {
+                page: {
+                    x: e.pageX,
+                    y: e.pageY
+                },
+            };
+
+            if (barcoNoMouse != "") {
+                img.style.top = `${mouse.page.y + 10}px`
+                if (posicao == "v") {
+                    img.style.left = `${mouse.page.x - 10}px`
+                } else {
+                    img.style.left = `${mouse.page.x + 10}px`
+                }
+            }
+
+        })
+        window.addEventListener('keyup', function (e) {
+            var codigoTecla = e.which || e.keyCode || 0;
+            var teclaR = codigoTecla == 82;
+            var teclaF = codigoTecla == 70;
+            if (barcoNoMouse != "" && teclaR) {
+                limpaHover();
+                if (posicao == "h") {
+                    img.style.transform = "rotate(90deg)"
+                    posicao = "v"
+                    img.style.left = `${mouse.page.x - 10}px`
+                } else {
+                    img.style.transform = "rotate(0deg)"
+                    posicao = "h"
+                    img.style.left = `${mouse.page.x + 10}px`
+                }
+            }
+            if (barcoNoMouse != "" && teclaF) {
+                dropBarco();
+            }
+        });
+
+
+        //0 = vazio
+        //1 = tiroVazio
+        //2 = barco atingido
+
+        class Tabuleiro {
+            constructor() {
+                this.matrix = [
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                ];
+                this.embarcacoes = [];
+            }
+
+            addEmbarcacao(embarcacao) {
+                this.embarcacoes.forEach((emb) => {
+                    if (emb.tipo == embarcacao.tipo) {
+                        throw new Error("Invalid: Embarcacao repetida");
+                    }
+                });
+
+                this.embarcacoes.push(embarcacao);
+            }
+
+            testarTiro(x, y) {
+                let resultado = "Errou";
+                this.embarcacoes.forEach((emb) => {
+                    let res = emb.receberTiro(x, y);
+
+                    if (res != "Errou") {
+                        resultado = res;
+                    }
+                });
+                switch (resultado) {
+                    case 'Errou':
+                        this.matrix[x][y] = 1;
+                        return false;
+                        break;
+                    case 'Acertou':
+                        this.matrix[x][y] = 2;
+                        return true;
+                        break;
+                    case 'Explodiu':
+                        this.matrix[x][y] = 2;
+                        alert("Você esplodiu o '" + emb.tipo + "' do seu oponente!");
+                        return true;
+                        break;
+                }
+                return false;
+            }
+        }
+
+        class TabuleiroPlayer extends Tabuleiro {
+            addEmbarcacao(embarcacao) {
+                this.embarcacoes.forEach((emb) => {
+                    if (emb.tipo == embarcacao.tipo) {
+                        throw new Error("Invalid: Embarcacao repetida");
+                    }
+                });
+
+                this.embarcacoes.push(embarcacao);
+
+                if (embarcacao.x1 == embarcacao.x2) {
+                    for (let i = y1; i <= y2; i++) {
+                        this.matrix[x1][i] = 2;
+                    }
+                } else if (embarcacao.y1 == embarcacao.y2) {
+                    for (let i = x1; i <= x2; i++) {
+                        this.matrix[y1][i] = 2;
+                    }
+                }
+            }
+        }
+
+        var PlayerT = new TabuleiroPlayer();
+        var OponenteT = new Tabuleiro();
+
+        //Embarcacao(1,2, 5,2, 4, barco_grande)
+        class Embarcacao {
+            constructor(tipo, x1, y1, x2, y2) {
+
+                if (x1 != x2 && y1 != y2) {
+                    throw new Error("Invalid posição");
+                }
+
+                switch (tipo) {
+                    case 'barco_01':
+                        this.len = 1;
+                        this.tipo = tipo;
+                        break;
+                    case 'barco_02':
+                        this.len = 2;
+                        this.tipo = tipo;
+                        break;
+                    case 'barco_03':
+                        this.len = 3;
+                        this.tipo = tipo;
+                        break;
+                    case 'barco_04':
+                        this.len = 4;
+                        this.tipo = tipo;
+                        break;
+                    case 'barco_05':
+                        this.len = 5;
+                        this.tipo = tipo;
+                        break;
+                    default:
+                        throw new Error("Invalid tipo: " + tipo);
+                }
+
+                this.x1 = x1;
+                this.y1 = y1;
+                this.x2 = x2;
+                this.y2 = y2;
+
+                if (this.x1 > this.x2) {
+                    let aux = this.x1;
+                    this.x1 = this.x2;
+                    this.x2 = aux;
+                }
+
+                if (this.y1 > this.y2) {
+                    let aux = this.y1;
+                    this.y1 = this.y2;
+                    this.y2 = aux;
+                }
+
+                this.tirosRecebidos = 0;
+
+            }
+
+            receberTiro(x, y) {
+                if (this.tirosRecebidos == this.len) {
+                    return 'Errou';
+                }
+                let aconteceu = "Errou";
+                if ((this.x1 == this.x2) && (this.x1 == x)) {
+                    ///Posicionado horizontalmente
+                    ///E o tiro foi na mesma linha
+                    if (y >= y1 && y <= y2) {
+                        this.tirosRecebidos++;
+                        aconteceu = 'Acertou';
+                    }
+                } else if ((this.y1 == this.y2) && (this.y1 == y)) {
+                    ///Posicionado verticalmente
+                    ///E o tiro foi na mesma coluna
+                    if (x >= x1 && x <= x2) {
+                        this.tirosRecebidos++;
+                        aconteceu = 'Acertou';
+                    }
+                }
+                if (this.tirosRecebidos == this.len) {
+                    return 'Explodiu';
+                }
+                return aconteceu;
+            }
+        }
+
+        const tabuleiroPlayer = document.getElementById("tabuleiroPlayer");
+        for (let i = 0; i < 15; i++) {
+            for (let j = 0; j < 15; j++) {
+                tabuleiroPlayer.innerHTML += `<button onmouseover="hoverColored(this)" onmouseout="limpaHover()" data-index_x='${j}' data-index_y='${i}' type="button" class="btn-secondary btn-casa"></button>`;
+            }
+            tabuleiroPlayer.innerHTML += "<br>";
+        }
+
+
+        function range(size, startAt = 0) {
+            return [...Array(size).keys()].map(i => i + startAt);
+        }
+
+        const hoverConvertHtmlToJs = [
+            range(15, 1),
+            range(15, 17),
+            range(15, 33),
+            range(15, 49),
+            range(15, 65),
+            range(15, 81),
+            range(15, 97),
+            range(15, 113),
+            range(15, 129),
+            range(15, 145),
+            range(15, 161),
+            range(15, 177),
+            range(15, 193),
+            range(15, 209),
+            range(15, 225)
+        ];
+
+        function limpaHover() {
+            tabuleiroPlayer.childNodes.forEach((pos) => {
+                if (pos.classList && pos.classList.contains("btn-warning")) {
+                    pos.classList.remove('btn-warning');
+                    pos.classList.add('btn-secundary');
+                }
+            });
+        }
+
+        function hoverColored(btn) {
+            let qtd = 0;
+            switch (barcoNoMouse) {
+                case 'barco_01':
+                    qtd = 1;
+                    break;
+                case 'barco_02':
+                    qtd = 2;
+                    break;
+                case 'barco_03':
+                    qtd = 3;
+                    break;
+                case 'barco_04':
+                    qtd = 4;
+                    break;
+                case 'barco_05':
+                    qtd = 5;
+                    break;
+            }
+            let linha = Number.parseInt(btn.dataset['index_x']);
+            let coluna = Number.parseInt(btn.dataset['index_y']);
+            
+            if (posicao == 'h') {
+                //console.log("Coluna: " + coluna);
+                //console.log("coluna+qtd: " + coluna+qtd);
+                linha = !(linha + qtd <= 15) ? (linha - ((linha + qtd) % 15)) : linha;
+                for (let i = linha; i < linha + qtd; i++) {
+                    tabuleiroPlayer.childNodes[hoverConvertHtmlToJs[coluna][i]]?.classList.remove('btn-secundary');
+                    tabuleiroPlayer.childNodes[hoverConvertHtmlToJs[coluna][i]]?.classList.add('btn-warning');
+                }
+            } else {
+                coluna = !(coluna + qtd <= 15) ? (coluna - ((coluna + qtd) % 15)) : coluna;
+                for (let j = coluna; j < coluna + qtd; j++) {
+                    //console.log(hoverConvertHtmlToJs[j][linha]);
+                    tabuleiroPlayer.childNodes[hoverConvertHtmlToJs[j][linha]]?.classList.remove('btn-secundary');
+                    tabuleiroPlayer.childNodes[hoverConvertHtmlToJs[j][linha]]?.classList.add('btn-warning');
+                }
+            }
+            //console.log(tabuleiroPlayer.childNodes);
+        }
+
+
+        const tabuleiroOponente = document.getElementById("tabuleiroOponente");
+        for (let i = 0; i < 15; i++) {
+            for (let j = 0; j < 15; j++) {
+                tabuleiroOponente.innerHTML += `<button onclick="marcarTabuleiroOponente(this)" data-index_x='${j}' data-index_y='${i}' type="button" class="btn-secondary btn-casa"></button>`;
+            }
+            tabuleiroOponente.innerHTML += "<br>";
+        }
+
+        function marcarTabuleiroPlayer(btn) {
+            //console.log(btn.dataset);
+            matrixPlayer[btn.dataset['index_x']][btn.dataset['index_y']] = 1;
+        }
+
+        function marcarTabuleiroOponente(btn) {
+            //console.log(btn.dataset);
+            btn.disabled = true;
+            btn.classList.remove('btn-secundary');
+            if (OponenteT.testarTiro(btn.dataset['index_x'], btn.dataset['index_y'])) {
+                ///Pintar de Vermelho
+                btn.classList.add('btn-danger');
+            } else {
+                ///Pintar de Azul
+                btn.classList.add('btn-info');
+            }
+        }
+
+        //onmouseover
+        //onmouseout
+        //transform: rotate(90deg);
+
+
+
+    </script>
+
+</body>
+
+</html>
