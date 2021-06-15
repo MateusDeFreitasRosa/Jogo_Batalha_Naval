@@ -25,8 +25,11 @@
 
     <div class="container-fluid vh-100">
         <div class="row text-center pt-5 pb-5">
-            <div class="col-2">
+            <div class="col-2" id="posicioneSeusBarcos">
                 <h3>Posicione Seus Barcos</h3>
+            </div>
+            <div class="col-2 d-none" id="pontos">
+                <h3>Placar</h3>
             </div>
             <div class="col-5">
                 <h2>Seu Tabuleiro</h2>
@@ -36,7 +39,7 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-2 d-flex justify-content-center align-items-center">
+            <div class="col-2 d-flex justify-content-center align-items-center" id="listaDeBarcos">
                 <div>
                     <div class="pb-3">
                         <img id="barco_01" src="./src/imgs/barcos/01.png" onclick="changeBarco(this)">
@@ -56,17 +59,56 @@
                 </div>
             </div>
 
-            <div class="col-5 d-flex justify-content-center align-items-center v-100">
-                <div id="tabuleiroPlayer">
+            <div class="col-2 d-flex justify-content-center align-items-center d-none" id="dadosDosPontos">
+                <div>
+                    <div class="pb-3">
+                        <h5 class="fs-6">Seus pontos:</h5>
+                        <span id="meusPontos">5</span>
+                    </div>
+                    <div class="pb-3">
+                        <h5 class="fs-6">Pontos do Adversário:</h5>
+                        <span id="pontosDele">5</span>
+                    </div>
+                    <div class="pb-3">
+                        <h5 class="fs-6">Seus tiros na agua:</h5>
+                        <span id="meusErros">5</span>
+                    </div>
+                    <div class="pb-3">
+                        <h5 class="fs-6">Tiros na agua do Adversário:</h5>
+                        <span id="errosDele">5</span>
+                    </div>
+                </div>
+            </div>
 
+            <div class="col-5 d-flex flex-column justify-content-center align-items-center v-100">
+                <div id="tabuleiroPlayer"></div>
+                <div class="mt-3 d-flex justify-content-between w-50" id="config">
+                    <button class="btn btn-danger" onclick="limpar()">Limpar</button>
+                    <button class="btn btn-success" onclick="save(this)">Salvar</button>
                 </div>
             </div>
             <div class="col-5 border-start d-flex justify-content-center align-items-center v-100">
-                <div id="tabuleiroOponente">
-
-                </div>
+                <div id="tabuleiroOponente"></div>
             </div>
+
         </div>
+        <section id="tutorial">
+            <h1>
+                Comandos
+            </h1>
+            <ul>
+                <li>
+                    Clique no barco para pegar ele
+                </li>
+                <li>
+                    teclas 'F' solta o barco
+                </li>
+                <li>
+                    tecla 'R' rodar o barco
+                </li>
+            </ul>
+
+        </section>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4"
@@ -80,6 +122,49 @@
         let mouse;
         var selecionado = false;
 
+        function save() {
+
+            // Verificando se todos os barcos foram setados no tabuleiro
+            for(let i=1; i<=5; i++) {
+                if(document.getElementById(`barco_0${i}`).style.visibility != "hidden") {
+                    return;
+                }
+            }
+
+            let titulo = document.getElementById("posicioneSeusBarcos")
+            let lista = document.getElementById("listaDeBarcos")
+
+            let score = document.getElementById("pontos")
+            let dadosScore = document.getElementById("dadosDosPontos")
+
+            let tutorial = document.getElementById("tutorial")
+
+            let config = document.getElementById("config")
+
+
+
+            //Limpando a tela
+            titulo.classList.add("d-none")
+            lista.classList.add("d-none")
+            tutorial.classList.add("d-none")
+            config.classList.add("d-none")
+
+            //Colocando o placar
+            score.classList.remove("d-none")
+            dadosScore.classList.remove("d-none")
+
+            
+        }
+
+
+        function limpar() {
+            PlayerT = new TabuleiroPlayer();
+            criaTabuleiroPlayer();
+            for(let i=1; i<=5; i++) {
+                document.getElementById(`barco_0${i}`).style.visibility = "visible";
+            }
+        }
+
         function changeBarco(e) {
             dropBarco();
             img = document.getElementById(e.id)
@@ -87,6 +172,12 @@
             console.log("Peguei barco" + img);
             img.style.position = "absolute";
             selecionado = true;
+        }
+
+        function esconderBarco() {
+            if (selecionado) {
+                img.style.visibility = "hidden";
+            }
         }
 
         function dropBarco() {
@@ -216,17 +307,29 @@
                     }
                 });
 
-                this.embarcacoes.push(embarcacao);
+                let cpy_matrix = JSON.parse(JSON.stringify(this.matrix));
 
                 if (embarcacao.x1 == embarcacao.x2) {
-                    for (let i = y1; i <= y2; i++) {
-                        this.matrix[x1][i] = 2;
+                    for (let i = embarcacao.y1; i < embarcacao.y2; i++) {
+                        if (cpy_matrix[i][embarcacao.x1] == 0) {
+                            cpy_matrix[i][embarcacao.x1] = 2;
+                        } else {
+                            throw new Error("Invalid: Embarcacoes sobrepostas");
+                        }
                     }
                 } else if (embarcacao.y1 == embarcacao.y2) {
-                    for (let i = x1; i <= x2; i++) {
-                        this.matrix[y1][i] = 2;
+                    for (let i = embarcacao.x1; i < embarcacao.x2; i++) {
+                        if (cpy_matrix[embarcacao.y1][i] == 0) {
+                            cpy_matrix[embarcacao.y1][i] = 2;
+                        } else {
+                            throw new Error("Invalid: Embarcacoes sobrepostas");
+                        }
                     }
                 }
+
+                this.embarcacoes.push(embarcacao);
+
+                this.matrix = cpy_matrix;
             }
         }
 
@@ -314,13 +417,108 @@
             }
         }
 
+        function posicionaBarco(btn) {
+            let linha = Number.parseInt(btn.dataset['index_x']);
+            let coluna = Number.parseInt(btn.dataset['index_y']);
+
+            if (!barcoNoMouse || barcoNoMouse == "")
+                return;
+
+            let qtd;
+            switch (barcoNoMouse) {
+                case 'barco_01':
+                    qtd = 1;
+                    break;
+                case 'barco_02':
+                    qtd = 2;
+                    break;
+                case 'barco_03':
+                    qtd = 3;
+                    break;
+                case 'barco_04':
+                    qtd = 4;
+                    break;
+                case 'barco_05':
+                    qtd = 5;
+                    break;
+            }
+
+            let porcent = 100 / (qtd - 1);
+            let porcent_delta = 0;
+
+            /*
+                background-image: url(./src/imgs/barcos/05.png);
+                background-size: cover;
+                background-position-x: 100%;
+                background-repeat: no-repeat;
+            */
+            // element.style.transform= "rotate(90deg)";
+            if (posicao == 'h') {
+                //console.log("Coluna: " + coluna);
+                //console.log("coluna+qtd: " + coluna+qtd);
+                linha = !(linha + qtd <= 15) ? (linha - ((linha + qtd) % 15)) : linha;
+
+                let embarcacao = new Embarcacao(barcoNoMouse, linha, coluna, linha + qtd, coluna);
+                PlayerT.addEmbarcacao(embarcacao);
+
+                for (let i = linha; i < linha + qtd; i++) {
+
+                    let element = tabuleiroPlayer.childNodes[hoverConvertHtmlToJs[coluna][i]];
+
+                    if (!element)
+                        continue;
+
+                    element.style.backgroundImage = `url(./src/imgs/barcos/0${qtd}.png)`;
+                    element.style.backgroundSize = "cover";
+                    element.style.backgroundPosition = `${porcent_delta}%`;
+                    element.style.backgroundRepeat = "no-repeat";
+                    porcent_delta += porcent;
+                }
+            } else {
+                coluna = !(coluna + qtd <= 15) ? (coluna - ((coluna + qtd) % 15)) : coluna;
+
+                let embarcacao = new Embarcacao(barcoNoMouse, linha, coluna, linha, coluna + qtd);
+                PlayerT.addEmbarcacao(embarcacao);
+
+                for (let j = coluna; j < coluna + qtd; j++) {
+
+                    let element = tabuleiroPlayer.childNodes[hoverConvertHtmlToJs[j][linha]];
+
+                    if (!element)
+                        continue;
+
+                    element.style.backgroundImage = `url(./src/imgs/barcos/0${qtd}.png)`;
+                    element.style.backgroundSize = "cover";
+                    element.style.backgroundPosition = `${porcent_delta}%`;
+                    element.style.backgroundRepeat = "no-repeat";
+                    element.style.transform = "rotate(90deg)";
+                    porcent_delta += porcent;
+                }
+            }
+
+            esconderBarco();
+            dropBarco();
+            ///_TODO_ Sumir o botão do barco
+        }
+
         const tabuleiroPlayer = document.getElementById("tabuleiroPlayer");
-        for (let i = 0; i < 15; i++) {
+        function criaTabuleiroPlayer() {
+            tabuleiroPlayer.innerHTML = "";
+            for (let i = 0; i < 15; i++) {
+                for (let j = 0; j < 15; j++) {
+                    tabuleiroPlayer.innerHTML += `<button onclick="posicionaBarco(this)" onmouseover="hoverColored(this)" onmouseout="limpaHover()" data-index_x='${j}' data-index_y='${i}' type="button" class="btn-secondary btn-casa"></button>`;
+                }
+                tabuleiroPlayer.innerHTML += "<br>";
+            }
+        }
+        criaTabuleiroPlayer();
+
+        /*for (let i = 0; i < 15; i++) {
             for (let j = 0; j < 15; j++) {
-                tabuleiroPlayer.innerHTML += `<button onmouseover="hoverColored(this)" onmouseout="limpaHover()" data-index_x='${j}' data-index_y='${i}' type="button" class="btn-secondary btn-casa"></button>`;
+                tabuleiroPlayer.innerHTML += `<button onclick="posicionaBarco(this)" onmouseover="hoverColored(this)" onmouseout="limpaHover()" data-index_x='${j}' data-index_y='${i}' type="button" class="btn-secondary btn-casa"></button>`;
             }
             tabuleiroPlayer.innerHTML += "<br>";
-        }
+        }*/
 
 
         function range(size, startAt = 0) {
@@ -328,21 +526,21 @@
         }
 
         const hoverConvertHtmlToJs = [
-            range(15, 1),
-            range(15, 17),
-            range(15, 33),
-            range(15, 49),
-            range(15, 65),
-            range(15, 81),
-            range(15, 97),
-            range(15, 113),
-            range(15, 129),
-            range(15, 145),
-            range(15, 161),
-            range(15, 177),
-            range(15, 193),
-            range(15, 209),
-            range(15, 225)
+            range(15, 0),
+            range(15, 16),
+            range(15, 32),
+            range(15, 48),
+            range(15, 64),
+            range(15, 80),
+            range(15, 96),
+            range(15, 112),
+            range(15, 128),
+            range(15, 144),
+            range(15, 160),
+            range(15, 176),
+            range(15, 192),
+            range(15, 208),
+            range(15, 224)
         ];
 
         function limpaHover() {
@@ -375,7 +573,7 @@
             }
             let linha = Number.parseInt(btn.dataset['index_x']);
             let coluna = Number.parseInt(btn.dataset['index_y']);
-            
+
             if (posicao == 'h') {
                 //console.log("Coluna: " + coluna);
                 //console.log("coluna+qtd: " + coluna+qtd);
