@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BATTLESHIP</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- socket -->
+  <script src="socket.io/socket.io.js"></script>
+
+  <style>
+    img {
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container-fluid vh-100">
+    <div class="row text-center pt-5 pb-5">
+      <div class="col-2" id="posicioneSeusBarcos">
+        <h3>Posicione Seus Barcos</h3>
+      </div>
+      <div class="col-2 d-none" id="pontos">
+        <h3>Placar</h3>
+      </div>
+      <div class="col-5">
+        <h2>Seu Tabuleiro</h2>
+      </div>
+      <div class="col-5">
+        <h2>Tabuleiro do Adversário</h2>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-2 d-flex justify-content-center align-items-center" id="listaDeBarcos">
+        <div>
+          <div class="pb-3">
+            <img id="barco_01" src="./src/imgs/barcos/01.png" onclick="changeBarco(this)" />
+          </div>
+          <div class="pb-3">
+            <img id="barco_02" src="./src/imgs/barcos/02.png" onclick="changeBarco(this)" />
+          </div>
+          <div class="pb-3">
+            <img id="barco_03" src="./src/imgs/barcos/03.png" onclick="changeBarco(this)" />
+          </div>
+          <div class="pb-3">
+            <img id="barco_04" src="./src/imgs/barcos/04.png" onclick="changeBarco(this)" />
+          </div>
+          <div class="pb-3">
+            <img id="barco_05" src="./src/imgs/barcos/05.png" onclick="changeBarco(this)" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-2 d-flex justify-content-center align-items-center d-none" id="dadosDosPontos">
+        <div>
+          <div class="pb-3">
+            <h5 class="fs-6">Seus pontos:</h5>
+            <span id="meusAcertos">0</span>
+          </div>
+          <div class="pb-3">
+            <h5 class="fs-6">Pontos do Adversário:</h5>
+            <span id="acertosAdversario">0</span>
+          </div>
+          <div class="pb-3">
+            <h5 class="fs-6">Seus tiros na agua:</h5>
+            <span id="meusErros">0</span>
+          </div>
+          <div class="pb-3">
+            <h5 class="fs-6">Tiros na agua do Adversário:</h5>
+            <span id="errosAdversario">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="
+            col-5
+            d-flex
+            flex-column
+            justify-content-center
+            align-items-center
+            v-100
+          ">
+        <div id="tabuleiroPlayer"></div>
+        <div class="mt-3 d-flex justify-content-between w-50" id="config">
+          <button class="btn btn-danger" onclick="limpar()">Limpar</button>
+          <button class="btn btn-success" onclick="save(this)">Salvar</button>
+        </div>
+      </div>
+      <div class="
+            col-5
+            border-start
+            d-flex
+            justify-content-center
+            align-items-center
+            v-100
+          ">
+        <div id="tabuleiroOponente"></div>
+      </div>
+    </div>
+    <section id="tutorial">
+      <h1>Comandos</h1>
+      <ul>
+        <li>Clique no barco para pegar ele</li>
+        <li>teclas 'F' solta o barco</li>
+        <li>tecla 'R' rodar o barco</li>
+      </ul>
+    </section>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4"
+    crossorigin="anonymous"></script>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+    integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+  <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    let barcoNoMouse = "";
+    let img = undefined;
+    let posicao = "h"; // h - horizontal    v - vertical
+    let mouse;
+    var selecionado = false;
+
+    // comunicação com o servidor
+
+    let ID;
+    let numeroJogador;
+
+    if (localStorage.getItem("ID")) {
+      ID = localStorage.getItem("ID");
+      numeroJogador = localStorage.getItem("numeroJogador");
+      $.ajax({
+        url: "http://127.0.0.1:8000/existeGame?ID=" + ID,
+        method: "GET",
+        dataType: "json",
+        contentType: "application/json",
+        success: function (data) {
+          console.log(data);
+          if (data["Existe"] == true) {
+            Swal.fire({
+              title: "Deseja recuperar sua partida?",
+              showDenyButton: true,
+              showCancelButton: false,
+              confirmButtonText: `Recuperar`,
+              denyButtonText: `Abandonar`,
+            }).then((result) => {
+              /* Read more about isConfirmed, isDenied below */
+              if (result.isConfirmed) {
+                //Recuperando jogo salvo
+                $.ajax({
+                  url: "http://127.0.0.1:8000/existeGame",
+                  method: "POST",
+                  dataType: "json",
+                  contentType: "application/json",
+                  data: JSON.stringify({
+                    ID: ID,
+                  }),
+                  success: function (data) {
+                    console.log(data);
+
+                    let embarc = data["embarcacoes"];
+                    let matr = data["matriz"];
+                    let vid = data["vida"];
+                    let matrA = data["matrizAdversario"];
+                    let vez = data["vez"];
+
+                    document.getElementById("meusAcertos").innerHTML =
+                      data["meusAcertos"];
+                    document.getElementById("acertosAdversario").innerHTML =
+                      data["acertosAdversario"];
+                    document.getElementById("meusErros").innerHTML =
+                      data["meusErros"];
+                    document.getElementById("errosAdversario").innerHTML =
+                      data["errosAdversario"];
+
+                    let titulo = document.getElementById(
+                      "posicioneSeusBarcos"
+                    );
+                    let lista = document.getElementById("listaDeBarcos");
+                    let score = document.getElementById("pontos");
+                    let dadosScore =
+                      document.getElementById("dadosDosPontos");
+                    titulo.classList.add("d-none");
+                    lista.classList.add("d-none");
+                    tutorial.classList.add("d-none");
+                    config.classList.add("d-none");
+                    score.classList.remove("d-none");
+                    dadosScore.classList.remove("d-none");
+
+                    embarc.forEach(barco => {
+                      changeBarco(document.getElementById(barco.tipo));
+                      let element = tabuleiroPlayer.childNodes[hoverConvertHtmlToJs[barco.y1][barco.x1]];
+                      element.click();
+                    });
+                    if (vez != numeroJogador) {
+                      document.getElementById("tabuleiroOponente").style.pointerEvents = "none";
+                    }
+                    document.getElementById("tabuleiroPlayer").style.pointerEvents = "none";
+
+                    PlayerT.marcarDisparos(matr);
+
+
+                    for (let i = 0; i < 15; i++) {
+                      for (let j = 0; j < 15; j++) {
+                        let element = tabuleiroOponente.childNodes[hoverConvertHtmlToJs[i][j]];
+                        if (matrA[i][j] == -3) {
+                          //Recebeu tiro em um barco
+                          ///Pintar de Azul escuro
+                          element.classList.remove("btn-secondary");
+                          element.classList.remove("btn-danger");
+                          element.classList.remove("btn-info");
+                          element.classList.add("btn-primary");
+                        }
+                        if (matrA[i][j] == -2) {
+                          //Recebeu tiro em um barco
+                          ///Pintar de Vermelho
+                          element.classList.add("btn-danger");
+                        } else if (matrA[i][j] == 1) {
+                          //Recebeu tiro na agua
+                          ///Pintar de Azul
+                          element.classList.add("btn-info");
+                        }
+                      }
+                    }
+
+
+                  },
+                  error: function (error) {
+                    console.log(error);
+                  },
+                });
+              } else if (result.isDenied) {
+                localStorage.clear();
+              }
+              iniciarPartida();
+            });
+          } else {
+            localStorage.clear();
+            iniciarPartida();
+          }
+        },
+        error: function (error) {
+          console.log(error);
+        },
+      });
+    } else {
+      iniciarPartida();
+    }
+
+    function iniciarPartida() {
+      if (!localStorage.getItem("ID")) {
+        $.ajax({
+          url: "http://127.0.0.1:8000/jogar",
+          method: "GET",
+          success: function (data) {
+            console.log(data);
+            ID = data["ID"];
+            numeroJogador = data["numeroJogador"];
+
+            localStorage.setItem("ID", ID);
+            localStorage.setItem("numeroJogador", numeroJogador);
+          },
+          error: function (error) {
+            console.log(error);
+          },
+        });
+      } else {
+        ID = localStorage.getItem("ID");
+        numeroJogador = localStorage.getItem("numeroJogador");
+      }
+    }
+
+    function save() {
+      // Verificando se todos os barcos foram setados no tabuleiro
+      for (let i = 1; i <= 5; i++) {
+        if (
+          document.getElementById(`barco_0${i}`).style.visibility != "hidden"
+        ) {
+          return;
+        }
+      }
+
+      let titulo = document.getElementById("posicioneSeusBarcos");
+      let lista = document.getElementById("listaDeBarcos");
+
+      let score = document.getElementById("pontos");
+      let dadosScore = document.getElementById("dadosDosPontos");
+
+      let tutorial = document.getElementById("tutorial");
+
+      let config = document.getElementById("config");
+
+      //Limpando a tela
+      titulo.classList.add("d-none");
+      lista.classList.add("d-none");
+      tutorial.classList.add("d-none");
+      config.classList.add("d-none");
+
+      //Colocando o placar
+      score.classList.remove("d-none");
+      dadosScore.classList.remove("d-none");
+
+      $.ajax({
+        url: "http://127.0.0.1:8000/cadastrarEmbarcacoes",
+        dataType: "json",
+        contentType: "application/json",
+        data: JSON.stringify({
+          ID: ID,
+          embarcacoes: PlayerT.getEmbarcacoesAsJson(),
+        }),
+        method: "POST",
+        success: function (data) {
+          console.log(data);
+          document.getElementById("tabuleiroPlayer").style.pointerEvents =
+            "none";
+        },
+        error: function (error) {
+          console.log(error);
+        },
+      });
+    }
+
+    function limpar() {
+      PlayerT = new TabuleiroPlayer();
+      criaTabuleiroPlayer();
+      for (let i = 1; i <= 5; i++) {
+        document.getElementById(`barco_0${i}`).style.visibility = "visible";
+      }
+    }
+
+    function changeBarco(e) {
+      dropBarco();
+      img = document.getElementById(e.id);
+      barcoNoMouse = e.id;
+      console.log("Peguei barco" + img);
+      img.style.position = "absolute";
+      selecionado = true;
+    }
+
+    function esconderBarco() {
+      if (selecionado) {
+        img.style.visibility = "hidden";
+      }
+    }
+
+    function dropBarco() {
+      if (selecionado) {
+        limpaHover();
+        console.log("Deixando barco");
+        img.style.position = "relative";
+        img.style.top = "0px";
+        img.style.left = "0px";
+        img.style.transform = "rotate(0deg)";
+        posicao = "h";
+        img = undefined;
+        barcoNoMouse = "";
+      }
+      selecionado = false;
+    }
+
+    window.addEventListener("mousemove", async (e) => {
+      mouse = {
+        page: {
+          x: e.pageX,
+          y: e.pageY,
+        },
+      };
+
+      if (barcoNoMouse != "") {
+        img.style.top = `${mouse.page.y + 10}px`;
+        if (posicao == "v") {
+          img.style.left = `${mouse.page.x - 10}px`;
+        } else {
+          img.style.left = `${mouse.page.x + 10}px`;
+        }
+      }
+    });
+    window.addEventListener("keyup", function (e) {
+      var codigoTecla = e.which || e.keyCode || 0;
+      var teclaR = codigoTecla == 82;
+      var teclaF = codigoTecla == 70;
+      if (barcoNoMouse != "" && teclaR) {
+        limpaHover();
+        if (posicao == "h") {
+          img.style.transform = "rotate(90deg)";
+          posicao = "v";
+          img.style.left = `${mouse.page.x - 10}px`;
+        } else {
+          img.style.transform = "rotate(0deg)";
+          posicao = "h";
+          img.style.left = `${mouse.page.x + 10}px`;
+        }
+      }
+      if (barcoNoMouse != "" && teclaF) {
+        dropBarco();
+      }
+    });
+
+    //0 = vazio
+    //1 = tiroVazio
+    //2 = barco atingido
+
+    class Tabuleiro {
+      constructor() {
+        this.matrix = [
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ];
+        this.embarcacoes = [];
+      }
+
+      addEmbarcacao(embarcacao) {
+        this.embarcacoes.forEach((emb) => {
+          if (emb.tipo == embarcacao.tipo) {
+            throw new Error("Invalid: Embarcacao repetida");
+          }
+        });
+
+        this.embarcacoes.push(embarcacao);
+      }
+    }
+
+    class TabuleiroPlayer extends Tabuleiro {
+      getEmbarcacoesAsJson() {
+        let embarcacoes = [];
+        this.embarcacoes.forEach((emb) => {
+          embarcacoes.push(JSON.stringify(emb));
+        });
+        return embarcacoes;
+      }
+
+      addEmbarcacao(embarcacao) {
+        this.embarcacoes.forEach((emb) => {
+          if (emb.tipo == embarcacao.tipo) {
+            throw new Error("Invalid: Embarcacao repetida");
+          }
+        });
+
+        let cpy_matrix = JSON.parse(JSON.stringify(this.matrix));
+
+        if (embarcacao.x1 == embarcacao.x2) {
+          for (let i = embarcacao.y1; i < embarcacao.y2; i++) {
+            if (cpy_matrix[i][embarcacao.x1] == 0) {
+              cpy_matrix[i][embarcacao.x1] = 2;
+            } else {
+              throw new Error("Invalid: Embarcacoes sobrepostas");
+            }
+          }
+        } else if (embarcacao.y1 == embarcacao.y2) {
+          for (let i = embarcacao.x1; i < embarcacao.x2; i++) {
+            if (cpy_matrix[embarcacao.y1][i] == 0) {
+              cpy_matrix[embarcacao.y1][i] = 2;
+            } else {
+              throw new Error("Invalid: Embarcacoes sobrepostas");
+            }
+          }
+        }
+
+        this.embarcacoes.push(embarcacao);
+
+        this.matrix = cpy_matrix;
+      }
+
+      marcarDisparos(matrixDisparos) {
+        for (let i = 0; i < 15; i++) {
+          for (let j = 0; j < 15; j++) {
+            if (matrixDisparos[i][j] != this.matrix[i][j]) {
+              this.matrix[i][j] = matrixDisparos[i][j];
+
+              let element =
+                tabuleiroPlayer.childNodes[hoverConvertHtmlToJs[i][j]];
+              //console.log(element);
+              if (matrixDisparos[i][j] == -3) {
+                //Recebeu tiro em um barco
+                ///Pintar de Azul escuro
+                element.classList.remove("btn-secondary");
+                element.classList.remove("btn-danger");
+                element.classList.remove("btn-info");
+                element.classList.add("btn-primary");
+              }
+              if (matrixDisparos[i][j] == -2) {
+                //Recebeu tiro em um barco
+                ///Pintar de Vermelho
+                element.classList.add("btn-danger");
+              } else if (matrixDisparos[i][j] == 1) {
+                //Recebeu tiro na agua
+                ///Pintar de Azul
+                element.classList.add("btn-info");
+              }
+            }
+          }
+        }
+      }
+    }
+
+    var PlayerT = new TabuleiroPlayer();
+
+    //Embarcacao(1,2, 5,2, 4, barco_grande)
+    class Embarcacao {
+      constructor(tipo, x1, y1, x2, y2) {
+        if (x1 != x2 && y1 != y2) {
+          throw new Error("Invalid posição");
+        }
+
+        switch (tipo) {
+          case "barco_01":
+            this.len = 1;
+            this.tipo = tipo;
+            break;
+          case "barco_02":
+            this.len = 2;
+            this.tipo = tipo;
+            break;
+          case "barco_03":
+            this.len = 3;
+            this.tipo = tipo;
+            break;
+          case "barco_04":
+            this.len = 4;
+            this.tipo = tipo;
+            break;
+          case "barco_05":
+            this.len = 5;
+            this.tipo = tipo;
+            break;
+          default:
+            throw new Error("Invalid tipo: " + tipo);
+        }
+
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+
+        if (this.x1 > this.x2) {
+          let aux = this.x1;
+          this.x1 = this.x2;
+          this.x2 = aux;
+        }
+
+        if (this.y1 > this.y2) {
+          let aux = this.y1;
+          this.y1 = this.y2;
+          this.y2 = aux;
+        }
+
+        this.tirosRecebidos = 0;
+      }
+    }
+
+    function posicionaBarco(btn) {
+      let linha = Number.parseInt(btn.dataset["index_x"]);
+      let coluna = Number.parseInt(btn.dataset["index_y"]);
+
+      if (!barcoNoMouse || barcoNoMouse == "") return;
+
+      let qtd;
+      switch (barcoNoMouse) {
+        case "barco_01":
+          qtd = 1;
+          break;
+        case "barco_02":
+          qtd = 2;
+          break;
+        case "barco_03":
+          qtd = 3;
+          break;
+        case "barco_04":
+          qtd = 4;
+          break;
+        case "barco_05":
+          qtd = 5;
+          break;
+      }
+
+      let porcent = 100 / (qtd - 1);
+      let porcent_delta = 0;
+
+      if (posicao == "h") {
+        linha = !(linha + qtd <= 15) ? linha - ((linha + qtd) % 15) : linha;
+
+        let embarcacao = new Embarcacao(
+          barcoNoMouse,
+          linha,
+          coluna,
+          linha + qtd,
+          coluna
+        );
+        PlayerT.addEmbarcacao(embarcacao);
+
+        for (let i = linha; i < linha + qtd; i++) {
+          let element =
+            tabuleiroPlayer.childNodes[hoverConvertHtmlToJs[coluna][i]];
+
+          if (!element) continue;
+
+          element.style.backgroundImage = `url(./src/imgs/barcos/0${qtd}.png)`;
+          element.style.backgroundSize = "cover";
+          element.style.backgroundPosition = `${porcent_delta}%`;
+          element.style.backgroundRepeat = "no-repeat";
+          porcent_delta += porcent;
+        }
+      } else {
+        coluna = !(coluna + qtd <= 15)
+          ? coluna - ((coluna + qtd) % 15)
+          : coluna;
+
+        let embarcacao = new Embarcacao(
+          barcoNoMouse,
+          linha,
+          coluna,
+          linha,
+          coluna + qtd
+        );
+        PlayerT.addEmbarcacao(embarcacao);
+
+        for (let j = coluna; j < coluna + qtd; j++) {
+          let element =
+            tabuleiroPlayer.childNodes[hoverConvertHtmlToJs[j][linha]];
+
+          if (!element) continue;
+
+          element.style.backgroundImage = `url(./src/imgs/barcos/0${qtd}.png)`;
+          element.style.backgroundSize = "cover";
+          element.style.backgroundPosition = `${porcent_delta}%`;
+          element.style.backgroundRepeat = "no-repeat";
+          element.style.transform = "rotate(90deg)";
+          porcent_delta += porcent;
+        }
+      }
+
+      esconderBarco();
+      dropBarco();
+    }
+
+    const tabuleiroPlayer = document.getElementById("tabuleiroPlayer");
+    function criaTabuleiroPlayer() {
+      tabuleiroPlayer.innerHTML = "";
+      for (let i = 0; i < 15; i++) {
+        for (let j = 0; j < 15; j++) {
+          tabuleiroPlayer.innerHTML += `<button onclick="posicionaBarco(this)" onmouseover="hoverColored(this)" onmouseout="limpaHover()" data-index_x='${j}' data-index_y='${i}' type="button" class="btn-secondary btn-casa"></button>`;
+        }
+        tabuleiroPlayer.innerHTML += "<br>";
+      }
+    }
+    criaTabuleiroPlayer();
+
+    function range(size, startAt = 0) {
+      return [...Array(size).keys()].map((i) => i + startAt);
+    }
+
+    const hoverConvertHtmlToJs = [
+      range(15, 0),
+      range(15, 16),
+      range(15, 32),
+      range(15, 48),
+      range(15, 64),
+      range(15, 80),
+      range(15, 96),
+      range(15, 112),
+      range(15, 128),
+      range(15, 144),
+      range(15, 160),
+      range(15, 176),
+      range(15, 192),
+      range(15, 208),
+      range(15, 224),
+    ];
+
+    function limpaHover() {
+      tabuleiroPlayer.childNodes.forEach((pos) => {
+        if (pos.classList && pos.classList.contains("btn-warning")) {
+          pos.classList.remove("btn-warning");
+          pos.classList.add("btn-secundary");
+        }
+      });
+    }
+
+    function hoverColored(btn) {
+      let qtd = 0;
+      switch (barcoNoMouse) {
+        case "barco_01":
+          qtd = 1;
+          break;
+        case "barco_02":
+          qtd = 2;
+          break;
+        case "barco_03":
+          qtd = 3;
+          break;
+        case "barco_04":
+          qtd = 4;
+          break;
+        case "barco_05":
+          qtd = 5;
+          break;
+      }
+      let linha = Number.parseInt(btn.dataset["index_x"]);
+      let coluna = Number.parseInt(btn.dataset["index_y"]);
+
+      if (posicao == "h") {
+        //console.log("Coluna: " + coluna);
+        //console.log("coluna+qtd: " + coluna+qtd);
+        linha = !(linha + qtd <= 15) ? linha - ((linha + qtd) % 15) : linha;
+        for (let i = linha; i < linha + qtd; i++) {
+          tabuleiroPlayer.childNodes[
+            hoverConvertHtmlToJs[coluna][i]
+          ]?.classList.remove("btn-secundary");
+          tabuleiroPlayer.childNodes[
+            hoverConvertHtmlToJs[coluna][i]
+          ]?.classList.add("btn-warning");
+        }
+      } else {
+        coluna = !(coluna + qtd <= 15)
+          ? coluna - ((coluna + qtd) % 15)
+          : coluna;
+        for (let j = coluna; j < coluna + qtd; j++) {
+          //console.log(hoverConvertHtmlToJs[j][linha]);
+          tabuleiroPlayer.childNodes[
+            hoverConvertHtmlToJs[j][linha]
+          ]?.classList.remove("btn-secundary");
+          tabuleiroPlayer.childNodes[
+            hoverConvertHtmlToJs[j][linha]
+          ]?.classList.add("btn-warning");
+        }
+      }
+      //console.log(tabuleiroPlayer.childNodes);
+    }
+
+    const tabuleiroOponente = document.getElementById("tabuleiroOponente");
+    for (let i = 0; i < 15; i++) {
+      for (let j = 0; j < 15; j++) {
+        tabuleiroOponente.innerHTML += `<button onclick="marcarTabuleiroOponente(this)" data-index_x='${j}' data-index_y='${i}' type="button" class="btn-secondary btn-casa"></button>`;
+      }
+      tabuleiroOponente.innerHTML += "<br>";
+    }
+
+    function marcarTabuleiroOponente(btn) {
+      //console.log(btn.dataset);
+      btn.disabled = true;
+      btn.classList.remove("btn-secundary");
+
+      $.ajax({
+        url: "http://127.0.0.1:8000/atirar",
+        dataType: "json",
+        contentType: "application/json",
+        data: JSON.stringify({
+          ID: ID,
+          X: btn.dataset["index_x"],
+          Y: btn.dataset["index_y"],
+        }),
+        method: "POST",
+        success: function (data) {
+          console.log(data);
+          if (data["Atingida"]) {
+            ///Pintar de azul escuro
+            let atingida = data["Atingida"];
+
+            if (atingida.x1 == atingida.x2) {
+              for (let i = atingida.y1; i < atingida.y2; i++) {
+                let element =
+                  tabuleiroOponente.childNodes[
+                  hoverConvertHtmlToJs[i][atingida.x1]
+                  ];
+                element.classList.remove("btn-secondary");
+                element.classList.remove("btn-danger");
+                element.classList.remove("btn-info");
+                element.classList.add("btn-primary");
+              }
+            } else if (atingida.y1 == atingida.y2) {
+              for (let i = atingida.x1; i < atingida.x2; i++) {
+                let element =
+                  tabuleiroOponente.childNodes[
+                  hoverConvertHtmlToJs[atingida.y1][i]
+                  ];
+                element.classList.remove("btn-secondary");
+                element.classList.remove("btn-danger");
+                element.classList.remove("btn-info");
+                element.classList.add("btn-primary");
+              }
+            }
+          } else if (data["Acertou"]) {
+            ///Pintar de Vermelho
+            btn.classList.add("btn-danger");
+          } else {
+            ///Pintar de Azul
+            btn.classList.add("btn-info");
+          }
+        },
+        error: function (error) {
+          console.log(error);
+          Swal.fire({
+            position: "top-end",
+            title: "Aguarde Sua vez!",
+            showConfirmButton: false,
+            timer: 800,
+          });
+        },
+      });
+    }
+
+    const socket = io();
+
+    socket.on("Inicio de jogo", () => {
+      $.ajax({
+        url: "http://127.0.0.1:8000/vez",
+        method: "GET",
+        success: function (data) {
+          if (data["vez"] == numeroJogador) {
+            Swal.fire({
+              position: "top-end",
+              title: "Sua vez!",
+              showConfirmButton: false,
+              timer: 1500,
+            });
+            tabuleiroOponente.style.pointerEvents = "auto";
+          } else {
+            tabuleiroOponente.style.pointerEvents = "none";
+          }
+        },
+        error: function (error) {
+          console.log(error);
+        },
+      });
+    });
+
+    socket.on("Disparo Efetuado", () => {
+      $.ajax({
+        url: "http://127.0.0.1:8000/matrixDisparos?ID=" + ID,
+        method: "GET",
+        success: function (data) {
+          PlayerT.marcarDisparos(data["matrix"]);
+        },
+        error: function (error) {
+          console.log(error);
+        },
+      });
+
+      $.ajax({
+        url: "http://127.0.0.1:8000/getScore",
+        dataType: "json",
+        contentType: "application/json",
+        data: JSON.stringify({
+          ID: ID,
+        }),
+        method: "POST",
+        success: function (data) {
+          document.getElementById("meusAcertos").innerHTML =
+            data["meusAcertos"];
+          document.getElementById("acertosAdversario").innerHTML =
+            data["acertosAdversario"];
+          document.getElementById("meusErros").innerHTML = data["meusErros"];
+          document.getElementById("errosAdversario").innerHTML =
+            data["errosAdversario"];
+        },
+        error: function (error) {
+          console.log(error);
+        },
+      });
+    });
+
+    socket.on("Proximo Jogador", () => {
+      $.ajax({
+        url: "http://127.0.0.1:8000/vez",
+        method: "GET",
+        success: function (data) {
+          if (data["vez"] == numeroJogador) {
+            Swal.fire({
+              position: "top-end",
+              title: "Sua vez!",
+              showConfirmButton: false,
+              timer: 1500,
+            });
+            tabuleiroOponente.style.pointerEvents = "auto";
+          } else {
+            tabuleiroOponente.style.pointerEvents = "none";
+          }
+        },
+        error: function (error) {
+          console.log(error);
+        },
+      });
+    });
+
+    socket.on("Fim de Jogo", () => {
+      $.ajax({
+        url: "http://127.0.0.1:8000/winner",
+        method: "GET",
+        success: function (data) {
+          Swal.fire({
+            position: "top-end",
+            icon: `${data["winner"] == numeroJogador ? "success" : "error"}`,
+            title: `${data["winner"] == numeroJogador ? "Vitória!" : "Derrota!"
+              }`,
+            showConfirmButton: false,
+            timer: 15000,
+          });
+          tabuleiroOponente.style.pointerEvents = "none";
+        },
+        error: function (error) {
+          console.log(error);
+        },
+      });
+    });
+  </script>
+</body>
+
+</html>
